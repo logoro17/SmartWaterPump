@@ -1,6 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
-  getDatabase, ref, onValue, update, set, remove, query, limitToLast
+  getDatabase, ref, onValue, update, set, remove, query, limitToLast, orderByKey
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 import {
   getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged
@@ -325,7 +325,7 @@ $("configForm").onsubmit = async (e) => {
 // ==========================================
 // LOGS POMPA & UPDATE GRAFIK
 // ==========================================
-onValue(query(ref(db, "logs"), limitToLast(200)), (snap) => {
+onValue(query(ref(db, "logs"), orderByKey(), limitToLast(200)), (snap) => {
   const tbody = $("logsBody");
   if (!snap.exists()) {
     tbody.innerHTML = '<tr><td colspan="5" class="center">Belum ada log aktivitas.</td></tr>';
