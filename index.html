@@ -15,6 +15,7 @@
     <div class="header-actions">
       <span id="connBadge" class="badge offline">Menghubungkan...</span>
       <span id="userInfo" class="user-badge hidden"></span>
+      <button id="btnSettings" class="btn btn-outline">⚙️ Settings</button>
       <button id="btnAuthModal" class="btn btn-primary">Login SuperUser</button>
       <button id="btnLogout" class="btn btn-outline hidden">Logout</button>
     </div>
@@ -113,30 +114,6 @@
       </div>
     </section>
 
-    <!-- PARAMETER DEKLARASI -->
-    <section class="card">
-      <div class="card-header">
-        <h2>Parameter Deklarasi</h2>
-        <span id="cfgLockTag" class="lock-tag">🔒 Hanya-baca (Login SuperUser untuk edit)</span>
-      </div>
-      <form id="configForm" class="form-grid">
-        <label>Level Low (%) <input type="number" id="inLow" min="0" max="99" required /></label>
-        <label>Level High (%) <input type="number" id="inHigh" min="1" max="100" required /></label>
-        <label>Flow Step Time (ms) <input type="number" id="inStep" min="1000" step="500" required /></label>
-        <label>Retry Interval (ms) <input type="number" id="inRetry" min="5000" step="1000" required /></label>
-        <label>Min Flow (pulse/s) <input type="number" id="inMinFlow" min="0" required /></label>
-        <label>ADC Min (0%) <input type="number" id="inAdcMin" min="0" max="4095" required /></label>
-        <label>ADC Max (100%) <input type="number" id="inAdcMax" min="0" max="4095" required /></label>
-        <label>PWM Power (0-255) <input type="number" id="inPwm" min="0" max="255" required /></label>
-        <label>Daya Pompa (Watt) <input type="number" id="inWatts" min="0.1" step="0.1" required /></label>
-        <div class="form-actions">
-          <button type="submit" id="btnSaveConfig" class="btn btn-primary su-only" disabled>
-            Simpan Parameter ke ESP32
-          </button>
-        </div>
-      </form>
-    </section>
-
     <!-- LOG AKTIVITAS POMPA -->
     <section class="card">
       <div class="card-header">
@@ -161,6 +138,35 @@
       </div>
     </section>
   </main>
+
+  <!-- MODAL SETTINGS (PARAMETER DEKLARASI) -->
+  <div id="settingsModal" class="modal hidden">
+    <div class="modal-content modal-lg">
+      <div class="modal-header">
+        <div>
+          <h3>Parameter Deklarasi</h3>
+          <span id="cfgLockTag" class="lock-tag">🔒 Hanya-baca (Login SuperUser untuk edit)</span>
+        </div>
+        <button type="button" id="btnCloseSettings" class="btn btn-outline">✕</button>
+      </div>
+      <form id="configForm" class="form-grid">
+        <label>Level Low (%) <input type="number" id="inLow" min="0" max="99" required /></label>
+        <label>Level High (%) <input type="number" id="inHigh" min="1" max="100" required /></label>
+        <label>Flow Step Time (ms) <input type="number" id="inStep" min="1000" step="500" required /></label>
+        <label>Retry Interval (ms) <input type="number" id="inRetry" min="5000" step="1000" required /></label>
+        <label>Min Flow (pulse/s) <input type="number" id="inMinFlow" min="0" required /></label>
+        <label>ADC Min (0%) <input type="number" id="inAdcMin" min="0" max="4095" required /></label>
+        <label>ADC Max (100%) <input type="number" id="inAdcMax" min="0" max="4095" required /></label>
+        <label>PWM Power (0-255) <input type="number" id="inPwm" min="0" max="255" required /></label>
+        <label>Daya Pompa (Watt) <input type="number" id="inWatts" min="0.1" step="0.1" required /></label>
+        <div class="form-actions">
+          <button type="submit" id="btnSaveConfig" class="btn btn-primary su-only" disabled>
+            Simpan Parameter ke ESP32
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
 
   <!-- MODAL LOGIN SUPERUSER -->
   <div id="authModal" class="modal hidden">

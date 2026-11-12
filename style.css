@@ -110,3 +110,10 @@ th { color: var(--muted); font-weight: 600; }
 .modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 6px; }
 .error-msg { color: #f87171; font-size: 0.84rem; margin: 0; }
 .hidden { display: none !important; }
+
+.modal-lg { max-width: 680px; max-height: 90vh; overflow-y: auto; }
+.modal-header {
+  display: flex; justify-content: space-between; align-items: flex-start;
+  gap: 12px; margin-bottom: 16px;
+}
+.modal-header h3 { margin: 0 0 4px; }

@@ -38,8 +38,14 @@ function formatDuration(sec) {
 }
 
 // ==========================================
-// SUPERUSER AUTHENTICATION
+// MODAL SETTINGS & SUPERUSER AUTHENTICATION
 // ==========================================
+$("btnSettings").onclick = () => $("settingsModal").classList.remove("hidden");
+$("btnCloseSettings").onclick = () => $("settingsModal").classList.add("hidden");
+$("settingsModal").onclick = (e) => {
+  if (e.target === $("settingsModal")) $("settingsModal").classList.add("hidden");
+};
+
 function applyAuthUI(user) {
   currentUser = user;
   const isSU = Boolean(user);
@@ -125,7 +131,6 @@ onValue(ref(db, "status"), (snap) => {
   updateManualButtons();
 });
 
-// Cek apakah ESP32 berhenti mengirim update (>10 detik)
 setInterval(() => {
   if (lastDeviceSeen > 0 && Date.now() - lastDeviceSeen > 10000) {
     $("connBadge").textContent = "Device Offline";
@@ -142,7 +147,6 @@ onValue(ref(db, "remote/config"), (snap) => {
   $("cfgLowTxt").textContent = `${c.levelLowPercent}%`;
   $("cfgHighTxt").textContent = `${c.levelHighPercent}%`;
 
-  // Jangan timpa input jika sedang fokus mengetik
   if (document.activeElement?.closest("#configForm")) return;
   $("inLow").value = c.levelLowPercent ?? 30;
   $("inHigh").value = c.levelHighPercent ?? 95;
@@ -193,6 +197,7 @@ $("configForm").onsubmit = async (e) => {
     pumpRatedWatts: Number($("inWatts").value),
     updatedBy: "web"
   });
+  $("settingsModal").classList.add("hidden");
   alert("Parameter berhasil dikirim ke ESP32!");
 };
 
@@ -207,7 +212,7 @@ onValue(query(ref(db, "logs"), limitToLast(30)), (snap) => {
   }
   const items = [];
   snap.forEach((child) => items.push(child.val()));
-  items.reverse(); // Terbaru di atas
+  items.reverse();
 
   tbody.innerHTML = items.map((l) => `
     <tr>
