@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>IoT Water Pump Monitoring</title>
   <link rel="stylesheet" href="style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
 </head>
 <body>
   <header class="topbar">
@@ -86,30 +87,44 @@
       </div>
     </section>
 
-    <!-- PANEL KONTROL SUPERUSER -->
-    <section class="card">
-      <div class="card-header">
-        <h2>Kontrol Pompa</h2>
-        <span id="ctrlLockTag" class="lock-tag">🔒 Login SuperUser untuk mengontrol</span>
+    <!-- KONTROL POMPA & GRAFIK HARIAN BERDAMPINGAN -->
+    <section class="grid-2">
+      <!-- Kiri: Kontrol Pompa (1 Tombol Toggle) -->
+      <div class="card">
+        <div class="card-header">
+          <h2>Kontrol Pompa</h2>
+          <span id="ctrlLockTag" class="lock-tag">🔒 Login SuperUser</span>
+        </div>
+        <div class="control-stack">
+          <div class="ctrl-box">
+            <p>Mode Operasi</p>
+            <button id="btnToggleMode" class="btn btn-full btn-primary su-only" disabled>
+              Mode: AUTO (Klik → MANUAL)
+            </button>
+          </div>
+          <div class="ctrl-box">
+            <p>Kontrol Manual Pompa</p>
+            <button id="btnTogglePump" class="btn btn-full btn-success su-only" disabled>
+              ▶ Hidupkan Pompa
+            </button>
+          </div>
+          <div class="ctrl-box">
+            <p>Counter Energi</p>
+            <button id="btnResetEnergy" class="btn btn-full btn-outline su-only" disabled>
+              Reset Total Daya
+            </button>
+          </div>
+        </div>
       </div>
-      <div class="control-grid">
-        <div class="ctrl-box">
-          <p>Mode Operasi</p>
-          <div class="btn-group">
-            <button id="btnModeAuto" class="btn su-only" disabled>AUTO</button>
-            <button id="btnModeManual" class="btn su-only" disabled>MANUAL</button>
-          </div>
+
+      <!-- Kanan: Grafik Pemakaian Per Jam (Hari Ini) -->
+      <div class="card">
+        <div class="card-header">
+          <h2>Grafik Pemakaian Hari Ini (Per Jam)</h2>
+          <span id="todaySummary" class="badge mode">Hari ini: 0.000 Wh</span>
         </div>
-        <div class="ctrl-box">
-          <p>Kontrol Manual Pompa</p>
-          <div class="btn-group">
-            <button id="btnPumpOn" class="btn btn-success su-only" disabled>HIDUPKAN</button>
-            <button id="btnPumpOff" class="btn btn-danger su-only" disabled>MATIKAN</button>
-          </div>
-        </div>
-        <div class="ctrl-box">
-          <p>Counter Energi</p>
-          <button id="btnResetEnergy" class="btn btn-outline su-only" disabled>Reset Total Daya</button>
+        <div class="chart-wrap">
+          <canvas id="hourlyChart"></canvas>
         </div>
       </div>
     </section>

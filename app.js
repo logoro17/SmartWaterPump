@@ -26,7 +26,9 @@ const auth = getAuth(app);
 
 let currentUser = null;
 let currentMode = "AUTO";
+let manualPumpState = false;
 let lastDeviceSeen = 0;
+let hourlyChart = null;
 
 const $ = (id) => document.getElementById(id);
 
@@ -37,6 +39,88 @@ function formatDuration(sec) {
   return [h, m, s].map((v) => String(v).padStart(2, "0")).join(":");
 }
 
+function getTodayDateString() {
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = String(now.getMonth() + 1).padStart(2, "0");
+  const d = String(now.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
+// ==========================================
+// GRAFIK PEMAKAIAN PER JAM (HARI INI)
+// ==========================================
+function initHourlyChart() {
+  const ctx = $("hourlyChart").getContext("2d");
+  const labels = Array.from({ length: 24 }, (_, h) => `${String(h).padStart(2, "0")}:00`);
+
+  hourlyChart = new window.Chart(ctx, {
+    type: "bar",
+    data: {
+      labels,
+      datasets: [{
+        label: "Energi (Wh)",
+        data: new Array(24).fill(0),
+        backgroundColor: "rgba(56, 189, 248, 0.75)",
+        borderColor: "#38bdf8",
+        borderWidth: 1,
+        borderRadius: 4
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: (item) => {
+              const sec = item.chart.$hourlySec?.[item.dataIndex] ?? 0;
+              return [`Energi: ${Number(item.raw).toFixed(4)} Wh`, `Durasi: ${sec} dtk`];
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          ticks: { color: "#94a3b8", maxRotation: 0, autoSkip: true, maxTicksLimit: 12 },
+          grid: { display: false }
+        },
+        y: {
+          beginAtZero: true,
+          ticks: { color: "#94a3b8" },
+          grid: { color: "rgba(51, 65, 85, 0.5)" }
+        }
+      }
+    }
+  });
+}
+
+function updateHourlyChart(logs) {
+  if (!hourlyChart) initHourlyChart();
+  const today = getTodayDateString();
+  const hourlyWh = new Array(24).fill(0);
+  const hourlySec = new Array(24).fill(0);
+  let todayTotalWh = 0;
+
+  logs.forEach((l) => {
+    if (!l.startTime || !l.startTime.startsWith(today)) return;
+    const hour = parseInt(l.startTime.slice(11, 13), 10);
+    if (Number.isNaN(hour) || hour < 0 || hour > 23) return;
+    const wh = Number(l.energyWh ?? 0);
+    hourlyWh[hour] += wh;
+    hourlySec[hour] += Number(l.durationSec ?? 0);
+    todayTotalWh += wh;
+  });
+
+  hourlyChart.$hourlySec = hourlySec;
+  hourlyChart.data.datasets[0].data = hourlyWh;
+  hourlyChart.update();
+  $("todaySummary").textContent = `Hari ini: ${todayTotalWh.toFixed(3)} Wh`;
+}
+
+initHourlyChart();
+
 // ==========================================
 // MODAL SETTINGS & SUPERUSER AUTHENTICATION
 // ==========================================
@@ -45,6 +129,37 @@ $("btnCloseSettings").onclick = () => $("settingsModal").classList.add("hidden")
 $("settingsModal").onclick = (e) => {
   if (e.target === $("settingsModal")) $("settingsModal").classList.add("hidden");
 };
+
+function updateControlButtons() {
+  const isSU = Boolean(currentUser);
+
+  // 1 Tombol Toggle Mode
+  const btnMode = $("btnToggleMode");
+  if (currentMode === "MANUAL") {
+    btnMode.textContent = "🖐️ Mode: MANUAL (Klik → AUTO)";
+    btnMode.className = "btn btn-full btn-warn su-only";
+  } else {
+    btnMode.textContent = "🔄 Mode: AUTO (Klik → MANUAL)";
+    btnMode.className = "btn btn-full btn-primary su-only";
+  }
+  btnMode.disabled = !isSU;
+
+  // 1 Tombol Toggle Pompa Manual
+  const btnPump = $("btnTogglePump");
+  if (currentMode !== "MANUAL") {
+    btnPump.textContent = "Ubah ke MANUAL untuk kontrol";
+    btnPump.className = "btn btn-full su-only";
+    btnPump.disabled = true;
+  } else if (manualPumpState) {
+    btnPump.textContent = "⏹ Matikan Pompa";
+    btnPump.className = "btn btn-full btn-danger su-only";
+    btnPump.disabled = !isSU;
+  } else {
+    btnPump.textContent = "▶ Hidupkan Pompa";
+    btnPump.className = "btn btn-full btn-success su-only";
+    btnPump.disabled = !isSU;
+  }
+}
 
 function applyAuthUI(user) {
   currentUser = user;
@@ -59,13 +174,7 @@ function applyAuthUI(user) {
 
   document.querySelectorAll(".su-only").forEach((el) => (el.disabled = !isSU));
   document.querySelectorAll("#configForm input").forEach((el) => (el.disabled = !isSU));
-  updateManualButtons();
-}
-
-function updateManualButtons() {
-  const canManual = Boolean(currentUser) && currentMode === "MANUAL";
-  $("btnPumpOn").disabled = !canManual;
-  $("btnPumpOff").disabled = !canManual;
+  updateControlButtons();
 }
 
 onAuthStateChanged(auth, applyAuthUI);
@@ -128,7 +237,7 @@ onValue(ref(db, "status"), (snap) => {
   $("currentWattsVal").textContent = `${Number(s.currentWatts ?? 0).toFixed(2)} W`;
   $("totalRuntimeVal").textContent = formatDuration(s.totalRuntimeSec ?? 0);
 
-  updateManualButtons();
+  updateControlButtons();
 });
 
 setInterval(() => {
@@ -163,18 +272,26 @@ onValue(ref(db, "remote/control"), (snap) => {
   const ctrl = snap.val();
   if (!ctrl) return;
   currentMode = ctrl.mode || "AUTO";
-  $("btnModeAuto").classList.toggle("active", currentMode === "AUTO");
-  $("btnModeManual").classList.toggle("active", currentMode === "MANUAL");
-  updateManualButtons();
+  manualPumpState = Boolean(ctrl.manualPump);
+  updateControlButtons();
 });
 
 // ==========================================
-// AKSI SUPERUSER (KONTROL & SIMPAN PARAMETER)
+// AKSI SUPERUSER (TOGGLE 1 TOMBOL & CONFIG)
 // ==========================================
-$("btnModeAuto").onclick = () => update(ref(db, "remote/control"), { mode: "AUTO", manualPump: false });
-$("btnModeManual").onclick = () => update(ref(db, "remote/control"), { mode: "MANUAL" });
-$("btnPumpOn").onclick = () => set(ref(db, "remote/control/manualPump"), true);
-$("btnPumpOff").onclick = () => set(ref(db, "remote/control/manualPump"), false);
+$("btnToggleMode").onclick = () => {
+  if (!currentUser) return;
+  const nextMode = currentMode === "AUTO" ? "MANUAL" : "AUTO";
+  update(ref(db, "remote/control"), {
+    mode: nextMode,
+    manualPump: false
+  });
+};
+
+$("btnTogglePump").onclick = () => {
+  if (!currentUser || currentMode !== "MANUAL") return;
+  set(ref(db, "remote/control/manualPump"), !manualPumpState);
+};
 
 $("btnResetEnergy").onclick = () => {
   if (confirm("Reset counter total pemakaian daya & waktu nyala?")) {
@@ -202,19 +319,25 @@ $("configForm").onsubmit = async (e) => {
 };
 
 // ==========================================
-// LOGS POMPA
+// LOGS POMPA & UPDATE GRAFIK
 // ==========================================
-onValue(query(ref(db, "logs"), limitToLast(30)), (snap) => {
+onValue(query(ref(db, "logs"), limitToLast(200)), (snap) => {
   const tbody = $("logsBody");
   if (!snap.exists()) {
     tbody.innerHTML = '<tr><td colspan="5" class="center">Belum ada log aktivitas.</td></tr>';
+    updateHourlyChart([]);
     return;
   }
-  const items = [];
-  snap.forEach((child) => items.push(child.val()));
-  items.reverse();
 
-  tbody.innerHTML = items.map((l) => `
+  const allItems = [];
+  snap.forEach((child) => allItems.push(child.val()));
+
+  // Update grafik 24 jam hari ini
+  updateHourlyChart(allItems);
+
+  // Tampilkan 30 log terbaru di tabel
+  const latest30 = allItems.slice(-30).reverse();
+  tbody.innerHTML = latest30.map((l) => `
     <tr>
       <td>${l.startTime || "-"}</td>
       <td>${l.endTime || "-"}</td>
