@@ -1,6 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
-  getDatabase, ref, onValue, update, set, remove, query, limitToLast, orderByKey
+  getDatabase, ref, onValue, update, set, remove, query, orderByKey, limitToLast
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 import {
   getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged
@@ -333,10 +333,9 @@ onValue(query(ref(db, "logs"), orderByKey(), limitToLast(200)), (snap) => {
     return;
   }
 
-  const allItems = [];
-  snap.forEach((child) => {
-    allItems.push(child.val());
-  });
+  const raw = snap.val() || {};
+  const allItems = Object.keys(raw).sort().map((k) => raw[k]);
+  console.log("[LOGS] Total diterima dari Firebase:", allItems.length);
 
   updateHourlyChart(allItems);
 
