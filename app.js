@@ -10,11 +10,14 @@ import {
 // KONFIGURASI FIREBASE PROJECT KAMU
 // ==========================================
 const firebaseConfig = {
-  apiKey: "FIREBASE_WEB_API_KEY",
-  authDomain: "PROJECT_ID.firebaseapp.com",
-  databaseURL: "https://PROJECT_ID-default-rtdb.firebaseio.com",
-  projectId: "PROJECT_ID",
-  appId: "FIREBASE_APP_ID"
+  apiKey: "AIzaSyAVuIEcatcoco_14NuV29Muff2OVmPIcGE",
+  authDomain: "smartwaterpump-a1283.firebaseapp.com",
+  databaseURL: "https://smartwaterpump-a1283-default-rtdb.asia-southeast1.firebasedatabase.app/",
+  projectId: "smartwaterpump-a1283",
+  storageBucket: "smartwaterpump-a1283.firebasestorage.app",
+  messagingSenderId: "679450097583",
+  appId: "1:679450097583:web:1af29c65d8ef0439a8e15a",
+  measurementId: "G-77CYW9GNVH"
 };
 
 const app = initializeApp(firebaseConfig);
