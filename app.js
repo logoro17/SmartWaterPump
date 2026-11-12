@@ -76,14 +76,14 @@ function initHourlyChart() {
           callbacks: {
             label: (item) => {
               const sec = item.chart.$hourlySec?.[item.dataIndex] ?? 0;
-              return [`Energi: ${Number(item.raw).toFixed(4)} Wh`, `Durasi: ${sec} dtk`];
+              return [`Energi: ${Number(item.raw).toFixed(4)} Wh`, `Durasi: ${sec} s`];
             }
           }
         }
       },
       scales: {
         x: {
-          ticks: { color: "#94a3b8", maxRotation: 0, autoSkip: true, maxTicksLimit: 12 },
+          ticks: { color: "#94a3b8", maxRotation: 0, autoSkip: true, maxTicksLimit: 8 },
           grid: { display: false }
         },
         y: {
@@ -122,7 +122,7 @@ function updateHourlyChart(logs) {
 initHourlyChart();
 
 // ==========================================
-// MODAL SETTINGS & SUPERUSER AUTHENTICATION
+// MODAL SETTINGS & SU AUTHENTICATION
 // ==========================================
 $("btnSettings").onclick = () => $("settingsModal").classList.remove("hidden");
 $("btnCloseSettings").onclick = () => $("settingsModal").classList.add("hidden");
@@ -133,18 +133,16 @@ $("settingsModal").onclick = (e) => {
 function updateControlButtons() {
   const isSU = Boolean(currentUser);
 
-  // 1 Tombol Toggle Mode
   const btnMode = $("btnToggleMode");
   if (currentMode === "MANUAL") {
-    btnMode.textContent = "🖐️ Mode: MANUAL (Klik → AUTO)";
+    btnMode.textContent = "MANUAL";
     btnMode.className = "btn btn-full btn-warn su-only";
   } else {
-    btnMode.textContent = "🔄 Mode: AUTO (Klik → MANUAL)";
+    btnMode.textContent = "AUTO";
     btnMode.className = "btn btn-full btn-primary su-only";
   }
   btnMode.disabled = !isSU;
 
-  // 1 Tombol Toggle Pompa Manual
   const btnPump = $("btnTogglePump");
   if (currentMode !== "MANUAL") {
     btnPump.textContent = "Ubah ke MANUAL untuk kontrol";
@@ -170,7 +168,7 @@ function applyAuthUI(user) {
   $("userInfo").classList.toggle("hidden", !isSU);
   $("ctrlLockTag").classList.toggle("hidden", isSU);
   $("cfgLockTag").classList.toggle("hidden", isSU);
-  if (isSU) $("userInfo").textContent = `SuperUser: ${user.email}`;
+  if (isSU) $("userInfo").textContent = `SU: ${user.email}`;
 
   document.querySelectorAll(".su-only").forEach((el) => (el.disabled = !isSU));
   document.querySelectorAll("#configForm input").forEach((el) => (el.disabled = !isSU));
@@ -183,6 +181,12 @@ $("btnAuthModal").onclick = () => $("authModal").classList.remove("hidden");
 $("btnCloseModal").onclick = () => {
   $("authModal").classList.add("hidden");
   $("loginErr").classList.add("hidden");
+};
+$("authModal").onclick = (e) => {
+  if (e.target === $("authModal")) {
+    $("authModal").classList.add("hidden");
+    $("loginErr").classList.add("hidden");
+  }
 };
 
 $("loginForm").onsubmit = async (e) => {
@@ -222,7 +226,7 @@ onValue(ref(db, "status"), (snap) => {
   currentMode = s.mode || "AUTO";
   $("modeBadge").textContent = currentMode;
   $("flowVal").textContent = s.flowPulses ?? 0;
-  $("sessionDurVal").textContent = `${s.currentSessionSec ?? 0} dtk`;
+  $("sessionDurVal").textContent = `${s.currentSessionSec ?? 0} s`;
 
   if (s.isWaterEmpty) {
     $("emptyAlert").classList.remove("hidden");
@@ -277,7 +281,7 @@ onValue(ref(db, "remote/control"), (snap) => {
 });
 
 // ==========================================
-// AKSI SUPERUSER (TOGGLE 1 TOMBOL & CONFIG)
+// AKSI SU (TOGGLE 1 TOMBOL & CONFIG)
 // ==========================================
 $("btnToggleMode").onclick = () => {
   if (!currentUser) return;
@@ -332,16 +336,14 @@ onValue(query(ref(db, "logs"), limitToLast(200)), (snap) => {
   const allItems = [];
   snap.forEach((child) => allItems.push(child.val()));
 
-  // Update grafik 24 jam hari ini
   updateHourlyChart(allItems);
 
-  // Tampilkan 30 log terbaru di tabel
   const latest30 = allItems.slice(-30).reverse();
   tbody.innerHTML = latest30.map((l) => `
     <tr>
       <td>${l.startTime || "-"}</td>
       <td>${l.endTime || "-"}</td>
-      <td>${l.durationSec ?? 0} dtk</td>
+      <td>${l.durationSec ?? 0} s</td>
       <td>${Number(l.energyWh ?? 0).toFixed(4)}</td>
       <td>${l.stopReason || "-"}</td>
     </tr>
