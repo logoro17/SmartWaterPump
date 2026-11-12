@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>IoT Water Pump Monitoring</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div>
+      <h1>Pompa Air IoT Dashboard</h1>
+      <p class="subtitle">Monitoring & Kontrol Realtime via Firebase</p>
+    </div>
+    <div class="header-actions">
+      <span id="connBadge" class="badge offline">Menghubungkan...</span>
+      <span id="userInfo" class="user-badge hidden"></span>
+      <button id="btnAuthModal" class="btn btn-primary">Login SuperUser</button>
+      <button id="btnLogout" class="btn btn-outline hidden">Logout</button>
+    </div>
+  </header>
+
+  <main class="container">
+    <!-- RINGKASAN STATUS -->
+    <section class="grid-3">
+      <!-- Card 1: Level Tangki -->
+      <div class="card">
+        <h2>Level Tangki</h2>
+        <div class="tank-wrapper">
+          <div class="tank-box">
+            <div id="tankWater" class="tank-water" style="height: 0%"></div>
+            <span id="tankPctText" class="tank-pct">0%</span>
+          </div>
+          <div class="tank-meta">
+            <div><span>Raw ADC:</span> <strong id="rawAdcVal">-</strong></div>
+            <div><span>Batas Nyala:</span> <strong id="cfgLowTxt">-</strong></div>
+            <div><span>Batas Mati:</span> <strong id="cfgHighTxt">-</strong></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 2: Status Pompa & Flow -->
+      <div class="card">
+        <h2>Status Pompa & Flow</h2>
+        <div class="stat-row">
+          <span>Status Pompa</span>
+          <strong id="pumpStateBadge" class="badge off">MATI</strong>
+        </div>
+        <div class="stat-row">
+          <span>Mode Operasi</span>
+          <strong id="modeBadge" class="badge mode">AUTO</strong>
+        </div>
+        <div class="stat-row">
+          <span>Sensor Flow</span>
+          <strong><span id="flowVal">0</span> pulse/dtk</strong>
+        </div>
+        <div class="stat-row">
+          <span>Durasi Sesi Aktif</span>
+          <strong id="sessionDurVal">0 dtk</strong>
+        </div>
+        <div id="emptyAlert" class="alert hidden">
+          ⚠️ Sumber Air Habis! Cek ulang dalam <strong id="retryVal">0</strong> detik.
+        </div>
+      </div>
+
+      <!-- Card 3: Pemakaian Daya -->
+      <div class="card">
+        <h2>Pemakaian Daya (5W DC)</h2>
+        <div class="big-metric">
+          <span id="totalEnergyWh">0.000</span>
+          <small>Wh</small>
+        </div>
+        <div class="stat-row">
+          <span>Total dalam kWh</span>
+          <strong id="totalEnergyKwh">0.0000 kWh</strong>
+        </div>
+        <div class="stat-row">
+          <span>Daya Aktif Saat Ini</span>
+          <strong id="currentWattsVal">0.00 W</strong>
+        </div>
+        <div class="stat-row">
+          <span>Total Waktu Nyala</span>
+          <strong id="totalRuntimeVal">00:00:00</strong>
+        </div>
+      </div>
+    </section>
+
+    <!-- PANEL KONTROL SUPERUSER -->
+    <section class="card">
+      <div class="card-header">
+        <h2>Kontrol Pompa</h2>
+        <span id="ctrlLockTag" class="lock-tag">🔒 Login SuperUser untuk mengontrol</span>
+      </div>
+      <div class="control-grid">
+        <div class="ctrl-box">
+          <p>Mode Operasi</p>
+          <div class="btn-group">
+            <button id="btnModeAuto" class="btn su-only" disabled>AUTO</button>
+            <button id="btnModeManual" class="btn su-only" disabled>MANUAL</button>
+          </div>
+        </div>
+        <div class="ctrl-box">
+          <p>Kontrol Manual Pompa</p>
+          <div class="btn-group">
+            <button id="btnPumpOn" class="btn btn-success su-only" disabled>HIDUPKAN</button>
+            <button id="btnPumpOff" class="btn btn-danger su-only" disabled>MATIKAN</button>
+          </div>
+        </div>
+        <div class="ctrl-box">
+          <p>Counter Energi</p>
+          <button id="btnResetEnergy" class="btn btn-outline su-only" disabled>Reset Total Daya</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- PARAMETER DEKLARASI -->
+    <section class="card">
+      <div class="card-header">
+        <h2>Parameter Deklarasi</h2>
+        <span id="cfgLockTag" class="lock-tag">🔒 Hanya-baca (Login SuperUser untuk edit)</span>
+      </div>
+      <form id="configForm" class="form-grid">
+        <label>Level Low (%) <input type="number" id="inLow" min="0" max="99" required /></label>
+        <label>Level High (%) <input type="number" id="inHigh" min="1" max="100" required /></label>
+        <label>Flow Step Time (ms) <input type="number" id="inStep" min="1000" step="500" required /></label>
+        <label>Retry Interval (ms) <input type="number" id="inRetry" min="5000" step="1000" required /></label>
+        <label>Min Flow (pulse/s) <input type="number" id="inMinFlow" min="0" required /></label>
+        <label>ADC Min (0%) <input type="number" id="inAdcMin" min="0" max="4095" required /></label>
+        <label>ADC Max (100%) <input type="number" id="inAdcMax" min="0" max="4095" required /></label>
+        <label>PWM Power (0-255) <input type="number" id="inPwm" min="0" max="255" required /></label>
+        <label>Daya Pompa (Watt) <input type="number" id="inWatts" min="0.1" step="0.1" required /></label>
+        <div class="form-actions">
+          <button type="submit" id="btnSaveConfig" class="btn btn-primary su-only" disabled>
+            Simpan Parameter ke ESP32
+          </button>
+        </div>
+      </form>
+    </section>
+
+    <!-- LOG AKTIVITAS POMPA -->
+    <section class="card">
+      <div class="card-header">
+        <h2>Log Aktivitas Pompa (30 Terakhir)</h2>
+        <button id="btnClearLogs" class="btn btn-outline su-only" disabled>Hapus Semua Log</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Waktu Mulai</th>
+              <th>Waktu Selesai</th>
+              <th>Durasi</th>
+              <th>Energi (Wh)</th>
+              <th>Alasan Berhenti</th>
+            </tr>
+          </thead>
+          <tbody id="logsBody">
+            <tr><td colspan="5" class="center">Memuat data log...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <!-- MODAL LOGIN SUPERUSER -->
+  <div id="authModal" class="modal hidden">
+    <div class="modal-content">
+      <h3>Login SuperUser</h3>
+      <form id="loginForm">
+        <label>Email <input type="email" id="loginEmail" required /></label>
+        <label>Password <input type="password" id="loginPass" required /></label>
+        <p id="loginErr" class="error-msg hidden"></p>
+        <div class="modal-actions">
+          <button type="button" id="btnCloseModal" class="btn btn-outline">Batal</button>
+          <button type="submit" class="btn btn-primary">Masuk</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>
