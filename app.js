@@ -266,6 +266,7 @@ onValue(ref(db, "remote/config"), (snap) => {
   $("inStep").value = c.flowStepTime ?? 20000;
   $("inRetry").value = c.retryInterval ?? 60000;
   $("inMinFlow").value = c.minFlowPulses ?? 1;
+  $("inMaxFlow").value = c.maxFlowPulses ?? 15;
   $("inAdcMin").value = c.adcMinVal ?? 2300;
   $("inAdcMax").value = c.adcMaxVal ?? 3800;
   $("inPwm").value = c.pumpPower ?? 200;
@@ -312,6 +313,7 @@ $("configForm").onsubmit = async (e) => {
     flowStepTime: Number($("inStep").value),
     retryInterval: Number($("inRetry").value),
     minFlowPulses: Number($("inMinFlow").value),
+    maxFlowPulses: Number($("inMaxFlow").value),
     adcMinVal: Number($("inAdcMin").value),
     adcMaxVal: Number($("inAdcMax").value),
     pumpPower: Number($("inPwm").value),
