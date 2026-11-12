@@ -334,7 +334,9 @@ onValue(query(ref(db, "logs"), orderByKey(), limitToLast(200)), (snap) => {
   }
 
   const allItems = [];
-  snap.forEach((child) => allItems.push(child.val()));
+  snap.forEach((child) => {
+    allItems.push(child.val());
+  });
 
   updateHourlyChart(allItems);
 
